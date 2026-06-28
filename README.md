@@ -2,6 +2,8 @@
 
 **Spatiotemporal NYC taxi-demand forecasting, predict hourly pickups per zone with calibrated prediction intervals.**
 
+**Live demo: [fleetcast.streamlit.app](https://fleetcast.streamlit.app/)**
+
 FleetCast forecasts the number of taxi pickups in each NYC taxi zone for each hour, with
 distribution-free **90% prediction intervals** whose coverage is empirically verified. It is a
 *panel* (multi-zone) forecaster with exogenous calendar/weather features, evaluated with a
@@ -10,7 +12,8 @@ univariate ARIMA toy.
 
 > **Status: complete (all 6 phases).** Global LightGBM (1h-ahead) **beats seasonal-naive by 26%
 > WAPE**, with **conformal 90% intervals at verified 0.914 coverage**, served on an interactive
-> Streamlit choropleth. `git clone && docker compose up` -> explore the map at `localhost:8501`.
+> Streamlit choropleth. Try the **[live demo](https://fleetcast.streamlit.app/)**, or
+> `git clone && docker compose up` -> explore the map at `localhost:8501`.
 
 <p align="center">
   <img src="docs/choropleth.svg" width="49%" alt="Choropleth of predicted pickups per NYC taxi zone"/>
