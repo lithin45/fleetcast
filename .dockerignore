@@ -1,0 +1,21 @@
+# Keep the build context small & the image clean.
+.git
+.github
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Data is bind-mounted at runtime, never baked into the image.
+data/raw/*
+data/processed/*
+data/forecasts/*
+
+docs
+tests
+*.md
+!README.md
+.DS_Store

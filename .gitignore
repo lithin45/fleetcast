@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# uv
+# (uv.lock IS committed for reproducibility)
+
+# Data artifacts — downloaded/generated, not versioned.
+# A tiny committed sample for CI lives under data/sample/ (force-added).
+data/raw/*
+data/processed/*
+data/forecasts/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/forecasts/.gitkeep
+!data/sample/
+# Committed precomputed snapshot so the hosted read-only dashboard works without the pipeline.
+!data/forecasts/forecasts.parquet
+!data/raw/taxi_zones.geojson
+!data/processed/backtest_metrics.json
+!data/processed/conformal_metrics.json
+*.part
+
+# OS / editor / tooling
+.DS_Store
+.idea/
+.vscode/

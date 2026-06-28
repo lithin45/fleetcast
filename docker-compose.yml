@@ -1,0 +1,41 @@
+# FleetCast stack: a one-shot `pipeline` service that builds data/features/model
+# and precomputes forecasts, then an `app` service that serves the Streamlit map.
+#
+#   docker compose up   ->  pipeline runs to completion, then the dashboard starts
+#
+# `./data` and `./config` are bind-mounted so downloads/forecasts are cached on the
+# host and a reviewer can inspect every artifact.
+
+services:
+  pipeline:
+    build: .
+    image: fleetcast:latest
+    container_name: fleetcast-pipeline
+    # Non-login `bash -c` on purpose: a login shell (`-lc`) sources /etc/profile,
+    # which resets PATH and drops /app/.venv/bin, so the `fleetcast` console
+    # script would not be found. (`train` runs the full backtest incl. baselines,
+    # so a separate `backtest` step would only re-run ARIMA — omitted here.)
+    command: >
+      bash -c "fleetcast data && fleetcast features &&
+               fleetcast train && fleetcast eval"
+    environment:
+      FLEETCAST_LOG_LEVEL: "INFO"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+
+  app:
+    build: .
+    image: fleetcast:latest
+    container_name: fleetcast-app
+    command: >
+      streamlit run src/fleetcast/ui/app.py
+      --server.port=8501 --server.address=0.0.0.0 --server.headless=true
+    depends_on:
+      pipeline:
+        condition: service_completed_successfully
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
