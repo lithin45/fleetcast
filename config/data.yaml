@@ -8,13 +8,14 @@ taxi:
   # Which TLC dataset to use. "yellow" = Manhattan-heavy high-volume cabs.
   # We deliberately pick yellow (highest volume, densest panel) and state it.
   service: yellow
-  # Recent months to download & model. Keep small: each monthly parquet is ~50 MB.
-  # 2024 is chosen on purpose to sit BEFORE the Jan-2025 congestion-pricing regime
-  # shift (a documented limitation; see README). Range is INCLUSIVE.
+  # Recent months to download & model. Keep small: each monthly parquet is ~50-70 MB.
+  # 2025-Q1 is the first quarter UNDER NYC congestion pricing (effective Jan 5 2025),
+  # so the whole window is one consistent post-pricing regime (see README).
+  # Range is INCLUSIVE.
   months:
-    - "2024-01"
-    - "2024-02"
-    - "2024-03"
+    - "2025-01"
+    - "2025-02"
+    - "2025-03"
   # Keep only the top-N highest-volume pickup zones (by total pickups across the
   # chosen months). Top-20 keeps the panel dense and the demo legible.
   top_n_zones: 20

@@ -8,8 +8,8 @@ distribution-free **90% prediction intervals** whose coverage is empirically ver
 leakage-safe **rolling-origin backtest** against seasonal-naive and ARIMA baselines, not a
 univariate ARIMA toy.
 
-> **Status: complete (all 6 phases).** Global LightGBM (1h-ahead) **beats seasonal-naive by 23%
-> WAPE**, with **conformal 90% intervals at verified 0.902 coverage**, served on an interactive
+> **Status: complete (all 6 phases).** Global LightGBM (1h-ahead) **beats seasonal-naive by 26%
+> WAPE**, with **conformal 90% intervals at verified 0.914 coverage**, served on an interactive
 > Streamlit choropleth. `git clone && docker compose up` -> explore the map at `localhost:8501`.
 
 <p align="center">
@@ -80,9 +80,10 @@ lazily on first load.
 | [Open-Meteo](https://open-meteo.com/) archive | Keyless weather fallback | CC BY 4.0 |
 
 **Scope (configurable in [`config/data.yaml`](config/data.yaml)):** yellow taxi, 3 months
-(2024-01...2024-03), top-20 highest-volume pickup zones. We use **2024** data deliberately, it
-sits *before* the January-2025 congestion-pricing regime shift (see [Limitations](#limitations)).
-The full TLC corpus is ~50 GB; FleetCast downloads only a handful of monthly files.
+(2025-01...2025-03), top-20 highest-volume pickup zones. We use **2025 Q1** on purpose, it is the
+first quarter under NYC congestion pricing (effective Jan 5 2025), so the whole window is one
+consistent post-pricing regime (see [Limitations](#limitations)). The full TLC corpus is ~50 GB;
+FleetCast downloads only a handful of monthly files.
 
 ### Zone-hour aggregation
 
@@ -134,24 +135,24 @@ their coverage empirically. We use **split (inductive) conformal** on the rollin
 architecture; we use MAPIE's `AbsoluteConformityScore` for the scores). Per zone, the interval
 half-width is the `ceil((n+1)(1-alpha))`-th smallest calibration residual, giving a finite-sample
 marginal-coverage guarantee. Calibration uses the earlier held-out hours; **coverage is measured on
-a disjoint later split**. Result: **empirical coverage 0.902** at nominal 0.90 (within +/-3% ✅),
-mean interval width ~ 86 pickups. See [`conformal/`](src/fleetcast/conformal/).
+a disjoint later split**. Result: **empirical coverage 0.914** at nominal 0.90 (within +/-3% ✅),
+mean interval width ~ 93 pickups. See [`conformal/`](src/fleetcast/conformal/).
 
 ## Evaluation results (vs. baselines)
 
 Rolling-origin **one-step-ahead** backtest, **336 hourly folds (last 14 days)**, top-20 zones,
-2024-01...03, model refit daily. The `make eval` gate enforces the thresholds and exits non-zero on a
+2025-01...03, model refit daily. The `make eval` gate enforces the thresholds and exits non-zero on a
 miss.
 
 | Metric | Seasonal-naive | ARIMA | **LightGBM** | Gate |
 | --- | --- | --- | --- | --- |
-| **WAPE** (lead) | 0.1697 | 0.3955 | **0.1306** | >= 20% better than SN -> **+23.0% ✅** |
-| MAE | 24.84 | 57.87 | **19.11** | reported |
-| RMSE | 40.19 | 87.63 | **29.55** | reported |
-| MAPE (high-volume zones) | 0.306 | 1.162 | **0.231** | < 15% (reported; noisy hours keep it higher) |
-| Conformal coverage @ 90% |, |, | **0.902** | 90% +/- 3% -> **✅** |
+| **WAPE** (lead) | 0.1668 | 0.3899 | **0.1239** | >= 20% better than SN -> **+25.7% ✅** |
+| MAE | 26.87 | 62.83 | **19.96** | reported |
+| RMSE | 43.43 | 97.33 | **31.64** | reported |
+| MAPE (high-volume zones) | 0.263 | 1.390 | **0.200** | < 15% (reported; noisy hours keep it higher) |
+| Conformal coverage @ 90% |, |, | **0.914** | 90% +/- 3% -> **✅** |
 
-**LightGBM beats seasonal-naive by 23% WAPE**, clearing the gate. ARIMA underperforms seasonal-naive,
+**LightGBM beats seasonal-naive by 26% WAPE**, clearing the gate. ARIMA underperforms seasonal-naive,
 which is expected: classical ARIMA struggles against a strong weekly-seasonal-naive on multi-seasonal
 hourly demand. FleetCast forecasts **one hour ahead** (see [Limitations](#limitations) for why a
 24h-ahead horizon cannot clear the 20% gate, a deliberate, measured finding).
@@ -196,10 +197,12 @@ Requirements: Docker (for the one-command path) **or** Python 3.11 + [uv](https:
   seasonal-naive by 20%, both a recursive multi-step and a direct origin-anchored model top out at
   **~+10% WAPE**, because the recent-demand signal that drives the gain simply isn't available 24h
   out. FleetCast therefore forecasts one hour ahead (live-dispatch mode), which clears the gate
-  honestly at +23%. Forecasting further ahead would need exogenous demand drivers (events, weather
+  honestly at +26%. Forecasting further ahead would need exogenous demand drivers (events, weather
   forecasts) beyond what daily weather provides.
-- **Congestion-pricing regime shift**, NYC's Jan-2025 congestion pricing changed Manhattan demand
-  levels; a model trained on 2024 would need recalibration to forecast post-2025.
+- **Congestion-pricing transition.** The window is 2025 Q1, the first quarter under NYC congestion
+  pricing (effective Jan 5 2025). The whole window is one post-pricing regime, but the very start of
+  January may reflect riders still adapting to the new toll, and the model would need recalibration
+  if the pricing rules change again.
 - Weather is **daily** and **lagged one day** for causality (so it can't leak), and **optional**, 
   the pipeline runs without it. Using a day-ahead weather *forecast* feed would let same-day weather
   be used legitimately; that's future work.
@@ -209,7 +212,7 @@ Requirements: Docker (for the one-command path) **or** Python 3.11 + [uv](https:
   time-ordered one-step-ahead residuals are only approximately exchangeable. Intervals are symmetric
   and constant-width within a zone; adaptive/normalized (CQR-style) intervals are future work.
 - **DST**: hours are naive local wall-clock (matching the TLC timestamps), so the spring-forward day
-  (e.g. 2024-03-10) carries a phantom 02:00 zone-hour that zero-fills, a negligible one-hour
+  (e.g. 2025-03-09) carries a phantom 02:00 zone-hour that zero-fills, a negligible one-hour
   artifact per year, not a leakage issue, but noted for completeness.
 
 ## Future work
@@ -224,8 +227,8 @@ intervals as a conformal comparison, zone-graph spatial features.
 | 1 | Scaffold + data ingestion + DuckDB smoke test | ✅ |
 | 2 | Dense zone-hour panel + causal features (DuckDB SQL) + no-leakage test | ✅ |
 | 3 | Baselines (seasonal-naive, ARIMA) + rolling-origin backtest | ✅ |
-| 4 | Global LightGBM (1h-ahead) + WAPE gate (+23%) | ✅ |
-| 5 | Conformal intervals + coverage gate (0.902 @ 90%) | ✅ |
+| 4 | Global LightGBM (1h-ahead) + WAPE gate (+26%) | ✅ |
+| 5 | Conformal intervals + coverage gate (0.914 @ 90%) | ✅ |
 | 6 | Streamlit choropleth + precomputed forecasts + README | ✅ |
 
 ## Author

@@ -7,15 +7,15 @@ WITH top_zones AS (   -- N highest-volume pickup zones over the window
     SELECT PULocationID AS zone_id
     FROM read_parquet('data/raw/yellow_tripdata_*.parquet')
     WHERE PULocationID BETWEEN 1 AND 263
-      AND tpep_pickup_datetime >= TIMESTAMP '2024-01-01 00:00:00'
-      AND tpep_pickup_datetime <  TIMESTAMP '2024-04-01 00:00:00'
+      AND tpep_pickup_datetime >= TIMESTAMP '2025-01-01 00:00:00'
+      AND tpep_pickup_datetime <  TIMESTAMP '2025-04-01 00:00:00'
     GROUP BY zone_id
     ORDER BY count(*) DESC, zone_id
     LIMIT 20
 ),
 hour_spine AS (   -- every hour in [start, end_excl): half-open, gap-free
     SELECT hour
-    FROM range(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-04-01 00:00:00', INTERVAL 1 HOUR) t(hour)
+    FROM range(TIMESTAMP '2025-01-01 00:00:00', TIMESTAMP '2025-04-01 00:00:00', INTERVAL 1 HOUR) t(hour)
 ),
 grid AS (   -- dense zone x hour lattice
     SELECT z.zone_id, s.hour
@@ -28,8 +28,8 @@ hourly AS (   -- observed pickup counts per zone-hour
         count(*)                   AS demand
     FROM read_parquet('data/raw/yellow_tripdata_*.parquet')
     WHERE PULocationID IN (SELECT zone_id FROM top_zones)
-      AND tpep_pickup_datetime >= TIMESTAMP '2024-01-01 00:00:00'
-      AND tpep_pickup_datetime <  TIMESTAMP '2024-04-01 00:00:00'
+      AND tpep_pickup_datetime >= TIMESTAMP '2025-01-01 00:00:00'
+      AND tpep_pickup_datetime <  TIMESTAMP '2025-04-01 00:00:00'
     GROUP BY zone_id, hour
 ),
 panel AS (   -- DENSE, zero-filled target: the prerequisite for gap-free lags
@@ -74,7 +74,7 @@ weather AS (   -- daily Central Park weather, broadcast across each day's 24 hou
 )
 SELECT
     f.*,
-    (f.hour::DATE IN (DATE '2024-01-01', DATE '2024-01-15', DATE '2024-02-19')) AS is_holiday,
+    (f.hour::DATE IN (DATE '2025-01-01', DATE '2025-01-20', DATE '2025-02-17')) AS is_holiday,
     w.prcp_mm AS prcp_mm_d1, w.snow_mm AS snow_mm_d1,
     w.tmax_c AS tmax_c_d1, w.tmin_c AS tmin_c_d1
 FROM featured f
